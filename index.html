@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal Proker OSIS</title>
+  <meta name="description" content="Jadwal Proker OSIS">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("theme-preference");
+        if (saved === "dark" || (!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      } catch (e) { }
+    })();
+  </script>
+</head>
+<!-- Hehe -->
+
+<body>
+
+  <!-- Top Navigation / App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <path d="M9 16l2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Jadwal Proker</h1>
+          <p>Proker OSIS Iqis</p>
+        </div>
+      </div>
+
+      <!-- Area Kontrol Navbar (Status Badge, Action Icons, Mobile Hamburger) -->
+      <div class="header-controls">
+        <!-- Status koneksi backend (Tampil di Desktop & Mobile) -->
+        <div id="connectionBadge" class="badge-status status-loading" title="Status koneksi data">
+          <span class="status-dot"></span>
+          <span class="status-text">Memuat data...</span>
+        </div>
+
+        <!-- Action Items Navbar / Dropdown Menu Mobile -->
+        <nav id="headerNav" class="header-actions" aria-label="Navigasi Utama">
+          <!-- 1. Tombol Ganti Tema (Light/Dark Mode) -->
+          <button id="themeToggleBtn" class="navbar-icon-btn theme-toggle-btn" type="button" title="Ganti ke Mode Gelap"
+            aria-label="Ganti ke Mode Gelap">
+            <!-- Moon Icon (Mode Terang Aktif) -->
+            <svg class="theme-icon theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <!-- Sun Icon (Mode Gelap Aktif) -->
+            <svg class="theme-icon theme-icon-sun hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+
+          <!-- 2. Tombol Notifikasi Peramban (Browser Notification Bell) -->
+          <button id="browserNotificationBtn" class="navbar-icon-btn notification-toggle-btn" type="button"
+            title="Aktifkan Notifikasi Pengingat Kegiatan" aria-label="Aktifkan Notifikasi Pengingat Kegiatan">
+            <svg class="bell-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span id="notificationDot" class="notification-indicator-dot hidden"></span>
+          </button>
+
+          <!-- 3. Tombol Langganan Notifikasi Email Harian -->
+          <button id="emailSubscribeModalBtn" class="navbar-icon-btn" type="button"
+            title="Daftar Notifikasi Email Harian" aria-label="Daftar Notifikasi Email Harian">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </button>
+
+          <!-- 4. Tombol Segarkan Data (Akses Publik: Tamu & Admin) -->
+          <button id="refreshBtn" class="navbar-icon-btn" type="button" title="Segarkan Data Kegiatan"
+            aria-label="Segarkan Data Kegiatan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+          </button>
+
+          <!-- 5. Tombol Login Admin (Tampil saat Mode Tamu) -->
+          <button id="adminLoginBtn" class="navbar-icon-btn" type="button" title="Masuk Sebagai Admin"
+            aria-label="Masuk Sebagai Admin">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </button>
+
+          <!-- 4. Indikator & Kontrol Mode Admin (Tampil saat Admin Aktif) -->
+          <div id="adminIndicatorWrap" class="admin-indicator-wrap hidden">
+            <span class="badge-admin" title="Mode Administrator Aktif">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span>Admin</span>
+            </span>
+            <button id="adminLogoutBtn" class="navbar-icon-btn btn-logout-icon" type="button"
+              title="Keluar dari Mode Admin" aria-label="Logout Admin">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- 5. Tombol Riwayat / Arsip Kegiatan (Hanya Tampil saat Mode Admin) -->
+          <button id="openArchiveModalBtn" class="navbar-icon-btn btn-archive-icon hidden" type="button"
+            title="Riwayat & Evaluasi Pelaksanaan Kegiatan" aria-label="Riwayat & Evaluasi Pelaksanaan Kegiatan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </button>
+
+          <!-- 6. Tombol Tambah Kegiatan (Hanya Tampil saat Mode Admin) -->
+          <button id="openAddModalBtn" class="navbar-icon-btn btn-add-icon hidden" type="button"
+            title="Tambah Kegiatan Baru" aria-label="Tambah Kegiatan Baru">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </nav>
+
+        <!-- Tombol Hamburger / Toggle Menu Mobile -->
+        <button id="navbarToggleBtn" class="navbar-toggle-btn" type="button" title="Buka Menu Navigasi"
+          aria-label="Buka Menu Navigasi" aria-expanded="false" aria-controls="headerNav">
+          <!-- Icon Menu / Hamburger -->
+          <svg class="nav-toggle-icon nav-icon-menu" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <!-- Icon Close (X) saat menu terbuka -->
+          <svg class="nav-toggle-icon nav-icon-close hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="app-main container">
+    <!-- Unit Satuan Filter Toolbar (Semua / Ikhwan / Akhwat) -->
+    <div class="unit-filter-toolbar">
+      <div class="unit-filter-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span>Filter Unit:</span>
+      </div>
+      <div class="unit-filter-group" id="unitFilterGroup" role="tablist" aria-label="Filter Unit Satuan">
+        <button type="button" class="unit-filter-btn active" data-unit="Semua" role="tab" aria-selected="true"
+          id="tabUnitSemua">
+          <span class="unit-filter-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="unit-filter-text">Semua</span>
+          <span class="unit-filter-badge" id="badgeCountSemua">0</span>
+        </button>
+        <button type="button" class="unit-filter-btn unit-btn-ikhwan" data-unit="Ikhwan" role="tab"
+          aria-selected="false" id="tabUnitIkhwan">
+          <span class="unit-filter-icon"><i class="fa-solid fa-user"></i></span>
+          <span class="unit-filter-text">Ikhwan</span>
+          <span class="unit-filter-badge" id="badgeCountIkhwan">0</span>
+        </button>
+        <button type="button" class="unit-filter-btn unit-btn-akhwat" data-unit="Akhwat" role="tab"
+          aria-selected="false" id="tabUnitAkhwat">
+          <span class="unit-filter-icon"><i class="fa-solid fa-user"></i></span>
+          <span class="unit-filter-text">Akhwat</span>
+          <span class="unit-filter-badge" id="badgeCountAkhwat">0</span>
+        </button>
+        <button type="button" class="unit-filter-btn unit-btn-bersama" data-unit="Bersama" role="tab"
+          aria-selected="false" id="tabUnitBersama">
+          <span class="unit-filter-icon"><i class="fa-solid fa-people-group"></i></span>
+          <span class="unit-filter-text">Bersama</span>
+          <span class="unit-filter-badge" id="badgeCountBersama">0</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+      <!-- Kolom Kiri: Kalender Bulan & Kegiatan Mendatang -->
+      <section class="col-left">
+
+        <!-- Card: Jam Makassar (WITA) -->
+        <div class="card clock-card">
+          <div class="clock-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="clock-info">
+            <span class="clock-label">Waktu Makassar &middot; WITA</span>
+            <div id="makassarTime" class="clock-time">--:--:--</div>
+            <div id="makassarDate" class="clock-date">Memuat...</div>
+          </div>
+        </div>
+
+        <!-- Card: Kalender Bulanan -->
+        <div class="card calendar-card">
+          <div class="calendar-card-header">
+            <div class="month-selector">
+              <h2 id="calendarMonthYear" class="month-title">September 2026</h2>
+              <div class="nav-arrows">
+                <button id="prevMonthBtn" class="nav-btn" aria-label="Bulan sebelumnya" title="Bulan Sebelumnya">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <button id="nextMonthBtn" class="nav-btn" aria-label="Bulan berikutnya" title="Bulan Berikutnya">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button id="todayBtn" class="btn btn-sm btn-outline" title="Kembali ke Hari Ini">
+              Hari Ini
+            </button>
+          </div>
+
+          <!-- Kalender Grid -->
+          <div class="calendar-wrapper">
+            <!-- Header Hari: Min - Sab -->
+            <div class="calendar-weekdays">
+              <span class="weekday weekend">Min</span>
+              <span class="weekday">Sen</span>
+              <span class="weekday">Sel</span>
+              <span class="weekday">Rab</span>
+              <span class="weekday">Kam</span>
+              <span class="weekday">Jum</span>
+              <span class="weekday weekend">Sab</span>
+            </div>
+
+            <!-- Kontainer Grid Hari (Di-generate oleh JS) -->
+            <div id="calendarDays" class="calendar-days">
+              <!-- Kotak hari akan dibuat dinamis melalui script.js -->
+            </div>
+          </div>
+
+          <!-- Keterangan Legend Kalender -->
+          <div class="calendar-legend">
+            <div class="legend-item">
+              <span class="legend-indicator legend-today"></span>
+              <span>Hari Ini</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-indicator legend-selected"></span>
+              <span>Dipilih</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-indicator legend-has-event"></span>
+              <span>Ada Kegiatan</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-indicator legend-tentative"></span>
+              <span>Rencana</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card: Kegiatan Mendatang (Upcoming Events) -->
+        <div class="card upcoming-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <h3>Kegiatan Mendatang</h3>
+            </div>
+            <span id="upcomingBadge" class="count-badge">0 Kegiatan</span>
+          </div>
+
+          <div class="card-body">
+            <div id="upcomingList" class="upcoming-list">
+              <!-- Item kegiatan mendatang akan di-render di sini -->
+            </div>
+            <button id="toggleUpcomingBtn" class="btn btn-text btn-block hidden" style="margin-top: 0.75rem;">
+              Lihat Lainnya
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Kolom Kanan: Detail Agenda Tanggal Terpilih -->
+      <section class="col-right">
+        <div class="card agenda-card">
+          <div class="agenda-header">
+            <div class="agenda-title-wrap">
+              <span class="agenda-subtitle">AGENDA KEGIATAN</span>
+              <h2 id="selectedDateTitle" class="selected-date-title">Kamis, 17 September 2026</h2>
+            </div>
+            <div class="agenda-meta">
+              <span id="selectedDateBadge" class="count-badge-emerald">0 Kegiatan</span>
+              <button id="quickAddBtn" class="btn btn-sm btn-primary hidden" title="Tambah Kegiatan di Tanggal Ini">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Tambah</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Daftar Kartu Kegiatan Pada Tanggal Ini -->
+          <div class="agenda-body">
+            <div id="selectedDateList" class="event-cards-container">
+              <!-- Kartu kegiatan spesifik tanggal akan dimuat di sini -->
+            </div>
+
+            <!-- Empty State jika tidak ada kegiatan di tanggal terpilih -->
+            <div id="emptyAgendaState" class="empty-state hidden">
+              <div class="empty-state-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <circle cx="12" cy="15" r="2"></circle>
+                </svg>
+              </div>
+              <h4>Tidak Ada Kegiatan</h4>
+              <p>Belum ada jadwal kegiatan untuk tanggal ini. Anda dapat membuat agenda baru sekarang.</p>
+              <button id="emptyStateAddBtn" class="btn btn-outline-primary hidden">
+                + Jadwalkan Kegiatan Baru
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal Dialog: Login Admin PIN -->
+  <div id="adminLoginModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="adminLoginTitle">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+          <div class="admin-modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <h3 id="adminLoginTitle">Login Admin</h3>
+        </div>
+        <button id="closeAdminLoginBtn" class="modal-close" aria-label="Tutup login admin">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="adminLoginForm" novalidate autocomplete="off">
+        <div class="modal-body">
+          <!-- Pesan Error Login Admin -->
+          <div id="adminLoginAlert" class="alert alert-danger hidden">
+            <span id="adminLoginAlertText">Password Admin salah.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="adminPinInput" class="form-label">
+              Masukkan Password Admin <span class="required">*</span>
+            </label>
+            <div class="pin-input-wrap">
+              <input type="password" id="adminPinInput" class="form-control pin-input"
+                placeholder="Masukkan password admin" maxlength="64" autocomplete="current-password" required>
+              <button type="button" id="togglePinVisibilityBtn" class="pin-toggle-btn"
+                title="Lihat/Sembunyikan Password" aria-label="Lihat Password">
+                <svg class="pin-icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="pin-icon-eye-off hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                  </path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <p class="text-muted text-sm" style="margin-top: 0.5rem; font-size: 0.8125rem;">
+              Masukkan password administrator untuk mengaktifkan fitur tambah, edit, dan hapus kegiatan.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelAdminLoginBtn" class="btn btn-secondary">Batal</button>
+          <button type="submit" id="submitAdminLoginBtn" class="btn btn-primary">
+            <span class="btn-text">Masuk</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Tambah / Edit Kegiatan -->
+  <div id="eventModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle">Tambah Kegiatan Baru</h3>
+        <button id="closeModalBtn" class="modal-close" aria-label="Tutup formulir">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="eventForm" novalidate>
+        <input type="hidden" id="eventId" name="id" value="">
+
+        <div class="modal-body">
+          <!-- Pesan Error Validasi Form -->
+          <div id="formAlert" class="alert alert-danger hidden">
+            <span id="formAlertText">Silakan periksa input form.</span>
+          </div>
+
+          <!-- Field Nama Program Kerja / Kegiatan -->
+          <div class="form-group">
+            <label for="eventJudul" class="form-label">
+              Nama Program Kerja / Kegiatan <span class="required">*</span>
+            </label>
+            <input type="text" id="eventJudul" class="form-control"
+              placeholder="Contoh: Piket Adzan Dzuhur, Rapat Koordinasi Uji Kompetensi RPL, dst" required
+              maxlength="120">
+          </div>
+
+          <!-- Field Deskripsi -->
+          <div class="form-group">
+            <label for="eventDeskripsi" class="form-label">
+              Deskripsi / Catatan Tambahan
+            </label>
+            <textarea id="eventDeskripsi" class="form-control" rows="3"
+              placeholder="Tuliskan keterangan detail, agenda pembahasan, atau perlengkapan yang perlu dibawa..."></textarea>
+          </div>
+
+          <!-- Field Lokasi Kegiatan (Custom Dropdown) -->
+          <div class="form-group">
+            <label id="eventLokasiLabel" class="form-label">
+              Lokasi Kegiatan <span class="required">*</span>
+            </label>
+            <input type="hidden" id="eventLokasi" name="lokasi" value="">
+            <div class="custom-select-wrap" id="customLokasiDropdown">
+              <button type="button" class="custom-select-trigger form-control" id="customLokasiTrigger"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="eventLokasiLabel">
+                <span class="custom-select-value">
+                  <span class="lokasi-placeholder" style="color: var(--text-muted);">Pilih Lokasi Kegiatan</span>
+                </span>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options custom-lokasi-options hidden" id="customLokasiOptions" role="listbox"
+                tabindex="-1">
+                <li class="custom-select-option" role="option" data-value="Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)"
+                  aria-selected="false" tabindex="0">
+                  <span class="lokasi-option-icon icon-lokasi-sekolah"><i class="fa-solid fa-school"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Masjid Pendidikan IQIS" aria-selected="false"
+                  tabindex="0">
+                  <span class="lokasi-option-icon icon-lokasi-masjid"><i class="fa-solid fa-mosque"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Masjid Pendidikan IQIS</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Lainnya" aria-selected="false" tabindex="0">
+                  <span class="lokasi-option-icon icon-lokasi-lainnya"><i class="fa-solid fa-location-dot"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Lainnya</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+              </ul>
+            </div>
+            <!-- Input Tambahan jika Lokasi 'Lainnya' dipilih -->
+            <div id="lokasiLainnyaWrap" class="form-group hidden" style="margin-top: 0.625rem;">
+              <input type="text" id="eventLokasiLainnya" class="form-control" placeholder="Tulis lokasi lain..."
+                maxlength="100">
+            </div>
+          </div>
+
+          <!-- Field Unit Satuan (Custom Dropdown) -->
+          <div class="form-group">
+            <label id="eventUnitLabel" class="form-label">
+              Unit Satuan <span class="required">*</span>
+            </label>
+            <input type="hidden" id="eventUnit" name="unit" value="">
+            <div class="custom-select-wrap" id="customUnitDropdown">
+              <button type="button" class="custom-select-trigger form-control" id="customUnitTrigger"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="eventUnitLabel">
+                <span class="custom-select-value">
+                  <span class="unit-placeholder" style="color: var(--text-muted);">Pilih Unit Satuan</span>
+                </span>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options custom-unit-options hidden" id="customUnitOptions" role="listbox"
+                tabindex="-1">
+                <li class="custom-select-option" role="option" data-value="Ikhwan" aria-selected="false" tabindex="0">
+                  <span class="unit-option-icon icon-unit-ikhwan"><i class="fa-solid fa-user"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Ikhwan</span>
+                    <span class="option-desc">Kegiatan khusus santri / OSIS Ikhwan</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Akhwat" aria-selected="false" tabindex="0">
+                  <span class="unit-option-icon icon-unit-akhwat"><i class="fa-solid fa-user"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Akhwat</span>
+                    <span class="option-desc">Kegiatan khusus santriwati / OSIS Akhwat</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Bersama" aria-selected="false" tabindex="0">
+                  <span class="unit-option-icon icon-unit-bersama"><i class="fa-solid fa-people-group"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Bersama (Ikhwan & Akhwat)</span>
+                    <span class="option-desc">Kegiatan gabungan seluruh santri / OSIS</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Field Divisi Penanggung Jawab (Custom Dropdown) -->
+          <div class="form-group">
+            <label id="eventDivisiLabel" class="form-label">
+              Divisi Penanggung Jawab <span class="required">*</span>
+            </label>
+            <input type="hidden" id="eventDivisi" name="divisi" value="">
+            <div class="custom-select-wrap" id="customDivisiDropdown">
+              <button type="button" class="custom-select-trigger form-control" id="customDivisiTrigger"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="eventDivisiLabel">
+                <span class="custom-select-value">
+                  <span class="divisi-placeholder" style="color: var(--text-muted);">Pilih Divisi Penanggung
+                    Jawab</span>
+                </span>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options custom-divisi-options hidden" id="customDivisiOptions" role="listbox"
+                tabindex="-1">
+                <li class="custom-select-option" role="option" data-value="Keislaman dan Pembinaan Karakter"
+                  aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-islam"><i class="fa-solid fa-mosque"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Keislaman dan Pembinaan Karakter</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Kepemimpinan dan Kebahasaan"
+                  aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-kepemimpinan"><i class="fa-solid fa-language"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Kepemimpinan dan Kebahasaan</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Komunikasi Media Kreatif"
+                  aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-media"><i class="fa-solid fa-photo-film"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Komunikasi Media Kreatif</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Kewirausahaan dan Sosial Lingkungan"
+                  aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-wirausaha"><i class="fa-solid fa-seedling"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Kewirausahaan dan Sosial Lingkungan</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Bersama / Proker Bersama"
+                  aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-bersama"><i class="fa-solid fa-people-group"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Bersama / Proker Bersama</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Lainnya" aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-lainnya"><i class="fa-solid fa-ellipsis"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Lainnya</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+              </ul>
+            </div>
+            <!-- Input Tambahan jika Divisi 'Lainnya' dipilih -->
+            <div id="divisiLainnyaWrap" class="form-group hidden" style="margin-top: 0.625rem;">
+              <input type="text" id="eventDivisiLainnya" class="form-control"
+                placeholder="Tulis nama divisi/kelompok lain..." maxlength="60">
+            </div>
+          </div>
+
+
+          <!-- Field Petugas / Penanggung Jawab (Multi-Petugas Dynamic List) -->
+          <div class="form-group" id="petugasGroup">
+            <label class="form-label" id="eventPetugasLabel">
+              Petugas / Penanggung Jawab
+            </label>
+            <div id="petugasListContainer" class="petugas-list-container">
+              <!-- Baris petugas dibuat secara dinamis oleh PetugasInputManager -->
+            </div>
+            <div class="petugas-actions-wrap">
+              <button type="button" id="addPetugasBtn" class="btn-add-petugas">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>+ Tambah Petugas Lain</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Field Status Kegiatan (Custom Dropdown) -->
+          <div class="form-group">
+            <label id="eventStatusLabel" class="form-label">
+              Status Kegiatan <span class="required">*</span>
+            </label>
+            <input type="hidden" id="eventStatus" name="status" value="confirmed">
+            <div class="custom-select-wrap" id="customStatusDropdown">
+              <button type="button" class="custom-select-trigger form-control" id="customStatusTrigger"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="eventStatusLabel">
+                <span class="custom-select-value">
+                  <span class="status-option-badge status-badge-confirmed">Terkonfirmasi (Pasti)</span>
+                </span>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options hidden" id="customStatusOptions" role="listbox" tabindex="-1">
+                <li class="custom-select-option selected" role="option" data-value="confirmed" aria-selected="true"
+                  tabindex="0">
+                  <span class="status-indicator-dot dot-confirmed"></span>
+                  <div class="option-text">
+                    <span class="option-title">Terkonfirmasi (Pasti)</span>
+                    <span class="option-desc">Kegiatan sudah terverifikasi dan dijadwalkan pasti</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="tentative" aria-selected="false"
+                  tabindex="0">
+                  <span class="status-indicator-dot dot-tentative"></span>
+                  <div class="option-text">
+                    <span class="option-title">Rencana (Tentatif)</span>
+                    <span class="option-desc">Jadwal masih sementara atau dalam perencanaan</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Row: Tanggal Mulai & Tanggal Selesai -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="eventTanggalMulai" class="form-label">
+                Tanggal Mulai <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <input type="text" id="eventTanggalMulai" class="form-control with-icon flatpickr-input-custom"
+                  placeholder="Pilih tanggal mulai" required readonly>
+              </div>
+            </div>
+            <div class="form-group col-half">
+              <label for="eventTanggalSelesai" class="form-label">
+                Tanggal Selesai <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <input type="text" id="eventTanggalSelesai" class="form-control with-icon flatpickr-input-custom"
+                  placeholder="Pilih tanggal selesai" required readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row: Jam Mulai & Jam Selesai -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="eventJamMulai" class="form-label">
+                Jam Mulai <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <input type="text" id="eventJamMulai" class="form-control with-icon flatpickr-input-custom"
+                  placeholder="08:00" required readonly>
+              </div>
+            </div>
+            <div class="form-group col-half">
+              <label for="eventJamSelesai" class="form-label">
+                Jam Selesai <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <input type="text" id="eventJamSelesai" class="form-control with-icon flatpickr-input-custom"
+                  placeholder="10:00" required readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary">Batal</button>
+          <button type="submit" id="saveEventBtn" class="btn btn-primary">
+            <span class="btn-text">Simpan Kegiatan</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Hapus -->
+  <div id="deleteModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header modal-header-danger">
+        <div class="danger-icon-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3>Hapus Kegiatan?</h3>
+      </div>
+      <div class="modal-body">
+        <p>Apakah Anda yakin ingin menghapus agenda kegiatan berikut?</p>
+        <div class="delete-target-preview">
+          <strong id="deleteTargetTitle">-</strong>
+          <span id="deleteTargetDate">-</span>
+        </div>
+        <p class="text-muted text-sm" style="margin-top: 0.5rem;">Data yang telah dihapus tidak dapat dipulihkan kembali
+          dari spreadsheet.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelDeleteBtn" class="btn btn-secondary">Batal</button>
+        <button id="confirmDeleteBtn" class="btn btn-danger">
+          <span class="btn-text">Ya, Hapus</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Langganan Notifikasi Email (Akses Publik - Tanpa PIN) -->
+  <div id="emailSubscribeModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="emailModalTitle">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+          <div class="email-modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <h3 id="emailModalTitle">Langganan Notifikasi Email</h3>
+        </div>
+        <button id="closeEmailModalBtn" class="modal-close" aria-label="Tutup modal langganan email">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="emailSubscribeForm" novalidate autocomplete="off">
+        <div class="modal-body">
+          <!-- Pesan Alert / Info Form Email -->
+          <div id="emailFormAlert" class="alert alert-danger hidden">
+            <span id="emailFormAlertText">Format email tidak valid.</span>
+          </div>
+
+          <!-- TAMPILAN 1: FORM INPUT EMAIL (Subscribe / Unsubscribe Manual / Cek Status) -->
+          <div id="emailFormSection">
+            <p id="emailModalDesc" class="text-muted text-sm" style="margin-bottom: 1rem; line-height: 1.5;">
+              Dapatkan ringkasan agenda program kerja OSIS setiap pagi hari langsung ke email Anda.
+            </p>
+
+            <div class="form-group" id="subscriberEmailGroup">
+              <label for="subscriberEmailInput" class="form-label" id="subscriberEmailLabel">
+                Alamat Email Anda <span class="required">*</span>
+              </label>
+              <div class="input-icon-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <input type="email" id="subscriberEmailInput" class="form-control with-icon"
+                  placeholder="nama@sekolah.sch.id" required maxlength="120" autocomplete="email">
+              </div>
+            </div>
+
+            <!-- Link Aksi Bawah Form -->
+            <div id="emailFormLinks"
+              style="margin-top: 0.875rem; font-size: 0.8125rem; display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end;">
+              <button type="button" id="toggleCheckStatusModeBtn" class="btn-link"
+                style="background: none; border: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: 0.8125rem;">
+                Cek status pendaftaran email
+              </button>
+              <button type="button" id="toggleUnsubscribeModeBtn" class="btn-link"
+                style="background: none; border: none; padding: 0; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-size: 0.8125rem;">
+                Berhenti berlangganan?
+              </button>
+            </div>
+          </div>
+
+          <!-- TAMPILAN 2: STATUS SUDAH BERLANGGANAN (Aktif di LocalStorage) -->
+          <div id="emailSubscribedSection" class="hidden">
+            <div class="subscribed-card">
+              <div class="subscribed-badge-header">
+                <div class="subscribed-status-pill">
+                  <span class="status-indicator-dot dot-confirmed"></span>
+                  <span>Aktif Berlangganan</span>
+                </div>
+              </div>
+              <p class="subscribed-intro">Anda sudah terdaftar untuk menerima pengingat agenda harian dengan email:</p>
+              <div class="subscribed-email-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span id="subscribedEmailDisplay" class="subscribed-email-text">-</span>
+              </div>
+            </div>
+
+            <div
+              style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" id="switchOtherEmailBtn" class="btn-link"
+                style="background: none; border: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: 0.8125rem;">
+                Daftar email lain
+              </button>
+              <button type="button" id="switchCheckOtherStatusBtn" class="btn-link"
+                style="background: none; border: none; padding: 0; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-size: 0.8125rem;">
+                Cek status email lain
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelEmailModalBtn" class="btn btn-secondary">Batal</button>
+          <button type="submit" id="submitEmailSubscribeBtn" class="btn btn-primary">
+            <span class="btn-text">Daftar</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Riwayat & Arsip Kegiatan (Admin Completion Review) -->
+  <div id="archiveModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="archiveModalTitle">
+    <div class="modal-dialog modal-archive">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+          <div class="admin-modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </div>
+          <h3 id="archiveModalTitle">Riwayat & Evaluasi Pelaksanaan Kegiatan</h3>
+        </div>
+        <button id="closeArchiveModalBtn" class="modal-close" aria-label="Tutup modal riwayat kegiatan">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Summary Bar & Statistik Pelaksanaan -->
+        <div class="archive-summary-bar">
+          <span id="archiveTotalText">Memuat riwayat kegiatan...</span>
+          <div class="archive-stats-group">
+            <span id="statTerlaksana" class="archive-stat-chip stat-chip-terlaksana">
+              <i class="fa-solid fa-circle-check"></i> <span class="stat-count">0</span> Terlaksana
+            </span>
+            <span id="statTidak" class="archive-stat-chip stat-chip-tidak">
+              <i class="fa-solid fa-circle-xmark"></i> <span class="stat-count">0</span> Tidak Terlaksana
+            </span>
+            <span id="statBelum" class="archive-stat-chip stat-chip-belum">
+              <i class="fa-solid fa-clock"></i> <span class="stat-count">0</span> Belum Dinilai
+            </span>
+          </div>
+        </div>
+
+        <!-- Daftar Item Arsip -->
+        <div id="archiveListContainer" class="archive-list">
+          <!-- Item kartu riwayat akan di-render di sini oleh script.js -->
+        </div>
+
+        <!-- Loading State Arsip -->
+        <div id="archiveLoadingState" class="archive-loading-wrap hidden">
+          <div class="archive-spinner-large"></div>
+          <p class="archive-loading-text">Memuat Riwayat Kegiatan...</p>
+          <p class="archive-loading-subtext">Mengambil data riwayat & evaluasi dari server...</p>
+        </div>
+
+        <!-- Empty State Arsip -->
+        <div id="archiveEmptyState" class="empty-state hidden" style="padding: 2.5rem 1rem;">
+          <div class="empty-state-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </div>
+          <h4>Belum Ada Arsip Kegiatan</h4>
+          <p>Kegiatan yang telah berakhir lebih dari 24 jam akan otomatis dipindahkan ke tab Arsip.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="refreshArchiveBtn" class="btn btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+          </svg>
+          <span>Segarkan</span>
+        </button>
+        <button type="button" id="closeArchiveBottomBtn" class="btn btn-primary">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Detail Kegiatan (Event Detail Modal) -->
+  <div id="eventDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="detailModalTitle">
+    <div class="modal-dialog modal-detail" id="eventDetailDialog">
+      <div class="modal-header modal-detail-header" id="detailModalHeader">
+        <div class="detail-header-content">
+          <div class="detail-badge-row">
+            <span id="detailStatusBadge"></span>
+            <span id="detailDivisiBadge"></span>
+            <span id="detailUnitBadge"></span>
+          </div>
+          <h3 id="detailModalTitle" class="detail-title">-</h3>
+        </div>
+        <button id="closeDetailModalBtn" class="modal-close" type="button" aria-label="Tutup detail kegiatan">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body modal-detail-body">
+        <!-- Deskripsi Section -->
+        <div class="detail-section">
+          <div class="detail-section-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Deskripsi Kegiatan</span>
+          </div>
+          <div id="detailDescription" class="detail-description-text">-</div>
+        </div>
+
+        <!-- Meta Grid Section -->
+        <div class="detail-grid">
+          <!-- Unit Satuan -->
+          <div class="detail-item" id="detailUnitItem">
+            <div class="detail-item-icon">
+              <i class="fa-solid fa-people-group" id="detailUnitIcon"></i>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Unit Satuan</span>
+              <span id="detailUnit" class="detail-item-value">-</span>
+            </div>
+          </div>
+
+          <!-- Tanggal Pelaksanaan -->
+          <div class="detail-item" id="detailTanggalItem">
+            <div class="detail-item-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Tanggal Pelaksanaan</span>
+              <span id="detailTanggal" class="detail-item-value">-</span>
+            </div>
+          </div>
+
+          <!-- Waktu Pelaksanaan -->
+          <div class="detail-item" id="detailWaktuItem">
+            <div class="detail-item-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Waktu Pelaksanaan</span>
+              <span id="detailWaktu" class="detail-item-value">-</span>
+            </div>
+          </div>
+
+          <!-- Lokasi Kegiatan -->
+          <div class="detail-item" id="detailLokasiItem">
+            <div class="detail-item-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Lokasi</span>
+              <span id="detailLokasi" class="detail-item-value">-</span>
+            </div>
+          </div>
+
+          <!-- Divisi Penanggung Jawab -->
+          <div class="detail-item" id="detailDivisiItem">
+            <div class="detail-item-icon">
+              <i class="fa-solid fa-layer-group" id="detailDivisiIcon"></i>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Divisi Penanggung Jawab</span>
+              <span id="detailDivisi" class="detail-item-value">-</span>
+            </div>
+          </div>
+
+
+          <!-- Petugas / PIC -->
+          <div class="detail-item" id="detailPetugasItem">
+            <div class="detail-item-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Petugas / Penanggung Jawab</span>
+              <span id="detailPetugas" class="detail-item-value">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer detail-modal-footer">
+        <div class="detail-admin-actions hidden" id="detailAdminActions">
+          <button type="button" id="detailDeleteBtn" class="btn btn-danger-soft">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            <span>Hapus</span>
+          </button>
+          <button type="button" id="detailEditBtn" class="btn btn-secondary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Edit</span>
+          </button>
+        </div>
+        <button type="button" id="closeDetailBottomBtn" class="btn btn-primary">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Floating Action Button (FAB - Hanya Tampil saat Mode Admin) -->
+  <button id="mobileFabBtn" class="mobile-fab hidden" title="Tambah Kegiatan Baru">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  </button>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Flatpickr Library & Indonesian Locale -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+
+  <!-- Script Logic -->
+  <script src="script.js"></script>
+</body>
+
+</html>
