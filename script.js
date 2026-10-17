@@ -13,7 +13,7 @@
  */
 
 // >>> TEMPELKAN WEB APP URL GOOGLE APPS SCRIPT ANDA DI SINI <<<
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFOPlodNxu0JSQkpDGnZ4wd89ryTAWjA8geQvBOGduYeLJUjc4va9e7iXDfNoaWAam/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxsyA1b5H0fl6Z4YRwe59r6EgkDMCNIAJKhfhd_ThF9CG3mODH3kBXPdUaxGlpFheE/exec";
 
 // Contoh: "https://script.google.com/macros/s/AKfycbxAbCdEfGhIjKlMnOpQrStUvWxYz/exec"
 
