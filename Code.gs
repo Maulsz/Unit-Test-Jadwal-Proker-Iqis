@@ -103,6 +103,46 @@
  *     memeriksa tab Subscribers secara berkala; baris email dapat dihapus manual jika diperlukan.
  * 12. Peringatan Struktur Data: Jangan mengubah nama tab 'Kegiatan' atau 'Subscribers', dan jangan
  *     mengubah urutan kolom header tabel.
+ *
+ * ============================================================================
+ * PANDUAN PENGATURAN NOTIFIKASI TELEGRAM (IKHWAN & AKHWAT TERPISAH):
+ * ============================================================================
+ * 1. Buat Bot Telegram Baru via @BotFather:
+ *    - Buka Telegram, cari @BotFather, ketik /newbot.
+ *    - Beri nama dan username bot (contoh: OsisIqisReminderBot).
+ *    - Salin HTTP API Token yang diberikan (format: 123456789:ABCdefGhIjk...).
+ *    - JANGAN PERNAH commit atau bagikan Bot Token ini ke publik/GitHub!
+ * 2. Masukkan Bot ke Grup / Saluran / Supergroup Forum:
+ *    - Tambahkan bot ke grup/saluran Ikhwan dan grup/saluran Akhwat.
+ *    - Jadikan bot sebagai ADMINISTRATOR dengan izin mengirim pesan (Post Messages / Send Messages).
+ * 3. Dapatkan Chat ID & Topic ID (Opsional):
+ *    - Cara termudah: Salin tautan pesan di grup (Klik kanan pesan -> Copy Message Link).
+ *      Format link: t.me/c/<id>/<topic>/<msg> atau t.me/c/<id>/<msg>.
+ *      Chat ID adalah -100<id> (misal id: 1234567890 -> Chat ID: -1001234567890).
+ *      Topic ID (jika grup bertipe forum) adalah angka di bagian tengah <topic>.
+ *      Jika bukan grup topik/forum, Topic ID tidak perlu diisi.
+ *    - Cara alternatif: Buka https://api.telegram.org/bot<TOKEN>/getUpdates setelah mengirim pesan di grup.
+ * 4. Atur Script Properties di Google Apps Script:
+ *    - Klik Project Settings ⚙️ di bilah sisi kiri editor -> Gulir ke "Script Properties".
+ *    - Tambahkan Properti WAJIB:
+ *      * TELEGRAM_BOT_TOKEN       : [Token Bot dari @BotFather]
+ *      * TELEGRAM_CHAT_ID_IKHWAN  : [Chat ID Grup/Channel Ikhwan, misal: -100xxxxxxxxxx]
+ *      * TELEGRAM_CHAT_ID_AKHWAT  : [Chat ID Grup/Channel Akhwat, misal: -100yyyyyyyyyy]
+ *    - Tambahkan Properti OPSIONAL (jika menggunakan grup Forum / Topik):
+ *      * TELEGRAM_TOPIC_ID_IKHWAN : [Nomor ID Topik Ikhwan, misal: 2]
+ *      * TELEGRAM_TOPIC_ID_AKHWAT : [Nomor ID Topik Akhwat, misal: 5]
+ * 5. Jalankan Tes Koneksi:
+ *    - Pilih fungsi 'testTelegramConnection' dari dropdown fungsi di bilah toolbar atas editor -> Klik 'Run'.
+ *    - Ini akan memicu dialog 'Authorization Required' untuk izin UrlFetchApp (koneksi HTTP eksternal).
+ *    - Klik 'Review Permissions' -> Izinkan akses.
+ *    - Periksa tab 'Execution log' untuk memastikan pesan tes berhasil terkirim ke target Ikhwan dan Akhwat.
+ * 6. Pasang 2 Pemicu Otomatis (Time-driven Triggers):
+ *    a. Pemicu Digest Harian (sendTelegramDailyDigest):
+ *       - Function: sendTelegramDailyDigest | Deployment: Head
+ *       - Event source: Time-driven | Type: Day timer | Time: 06:00 to 07:00 (Pagi).
+ *    b. Pemicu Pengingat Menjelang Kegiatan (sendTelegramReminders):
+ *       - Function: sendTelegramReminders | Deployment: Head
+ *       - Event source: Time-driven | Type: Minutes timer | Interval: Every 10 minutes (Setiap 10 menit).
  * ============================================================================
  */
 
@@ -121,6 +161,10 @@ var ADMIN_PASSWORD_AKHWAT_PROPERTY_NAME = "ADMIN_PASSWORD_AKHWAT";
 
 // Durasi masa aktif sesi token admin (1 jam = 3600 detik)
 var TOKEN_EXPIRATION_SECONDS = 3600;
+
+// Konfigurasi Pengingat & Notifikasi Telegram
+var TELEGRAM_REMINDER_MINUTES_BEFORE = 30;
+var TELEGRAM_NOTIFY_ENABLED = true;
 
 // Struktur kolom tabel kegiatan (Jadwal Program Kerja OSIS - 13 Kolom dengan Unit)
 var HEADERS = [
@@ -939,6 +983,20 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/**
+ * Helper untuk mengonversi string jam ("H:mm" atau "HH:mm") menjadi total menit.
+ * Nilai kosong atau tidak valid diperlakukan sebagai 99999 agar diurutkan di bagian paling akhir.
+ */
+function parseTimeToMinutes_(timeStr) {
+  if (!timeStr) return 99999;
+  var parts = String(timeStr).trim().split(":");
+  if (parts.length < 2) return 99999;
+  var hours = parseInt(parts[0], 10);
+  var minutes = parseInt(parts[1], 10);
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0) return 99999;
+  return hours * 60 + minutes;
 }
 
 /**
@@ -1766,9 +1824,9 @@ function sendDailyReminderEmails() {
       recipientEmails = recipientEmails.slice(0, remainingQuota);
     }
 
-    // Urutkan agenda berdasarkan jam mulai
+    // Urutkan agenda berdasarkan jam mulai secara numerik
     todayEvents.sort(function (a, b) {
-      return (a.jam_mulai || "").localeCompare(b.jam_mulai || "");
+      return parseTimeToMinutes_(a.jam_mulai) - parseTimeToMinutes_(b.jam_mulai);
     });
 
     // 3. Susun isi email (Plain Text & HTML)
@@ -1889,3 +1947,551 @@ function sendDailyReminderEmails() {
     console.error("Kesalahan saat menjalankan sendDailyReminderEmails:", err);
   }
 }
+
+// ============================================================================
+// NOTIFIKASI TELEGRAM BACKEND (IKHWAN & AKHWAT TERPISAH)
+// ============================================================================
+
+/**
+ * Helper internal untuk membaca konfigurasi bot dan target Telegram dari Script Properties.
+ * Properti wajib: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID_IKHWAN, TELEGRAM_CHAT_ID_AKHWAT.
+ * Properti opsional: TELEGRAM_TOPIC_ID_IKHWAN, TELEGRAM_TOPIC_ID_AKHWAT (untuk supergroup Forum).
+ * Token bot TIDAK PERNAH dicatat (log) ke konsol.
+ */
+function telegramGetConfig_() {
+  var props = PropertiesService.getScriptProperties();
+  var token = (props.getProperty("TELEGRAM_BOT_TOKEN") || "").trim();
+  var ikhwanChatId = (props.getProperty("TELEGRAM_CHAT_ID_IKHWAN") || "").trim();
+  var akhwatChatId = (props.getProperty("TELEGRAM_CHAT_ID_AKHWAT") || "").trim();
+  var ikhwanTopicId = (props.getProperty("TELEGRAM_TOPIC_ID_IKHWAN") || "").trim();
+  var akhwatTopicId = (props.getProperty("TELEGRAM_TOPIC_ID_AKHWAT") || "").trim();
+
+  return {
+    token: token,
+    targets: {
+      Ikhwan: {
+        unit: "Ikhwan",
+        chatId: ikhwanChatId,
+        topicId: ikhwanTopicId
+      },
+      Akhwat: {
+        unit: "Akhwat",
+        chatId: akhwatChatId,
+        topicId: akhwatTopicId
+      }
+    }
+  };
+}
+
+/**
+ * Helper inti pengiriman pesan Telegram via Telegram Bot API (sendMessage).
+ * - Target adalah pasangan (chatId, optional topicId).
+ * - "message_thread_id" HANYA dikirim jika topicId berupa angka (integer).
+ * - Tidak pernah mencatat token atau URL yang berisi token ke dalam log.
+ * - Memotong teks jika melebihi batas 4096 karakter Telegram.
+ * - Menganalisis respon kegagalan Telegram dan memberikan petunjuk error yang informatif.
+ */
+function telegramSendMessage_(target, htmlText) {
+  if (!TELEGRAM_NOTIFY_ENABLED) {
+    console.log("Notifikasi Telegram dinonaktifkan (TELEGRAM_NOTIFY_ENABLED = false).");
+    return false;
+  }
+
+  var config = telegramGetConfig_();
+  if (!config.token) {
+    console.warn("TELEGRAM_BOT_TOKEN belum disetel di Script Properties. Pengiriman pesan Telegram dilewati.");
+    return false;
+  }
+
+  if (!target || !target.chatId) {
+    console.warn("Chat ID Telegram belum disetel untuk target " + (target && target.unit ? target.unit : "Unknown") + ". Pengiriman dilewati.");
+    return false;
+  }
+
+  if (!htmlText || !String(htmlText).trim()) {
+    return false;
+  }
+
+  var textStr = String(htmlText);
+  // Pastikan mematuhi batas 4096 karakter per pesan Telegram
+  var chunks = [];
+  if (textStr.length <= 4096) {
+    chunks.push(textStr);
+  } else {
+    var lines = textStr.split("\n");
+    var currentChunk = "";
+    for (var l = 0; l < lines.length; l++) {
+      var line = lines[l];
+      if ((currentChunk + "\n" + line).length > 4096) {
+        if (currentChunk) chunks.push(currentChunk.trim());
+        currentChunk = line;
+      } else {
+        currentChunk = currentChunk ? (currentChunk + "\n" + line) : line;
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk.trim());
+  }
+
+  var allSuccess = true;
+
+  for (var c = 0; c < chunks.length; c++) {
+    var payload = {
+      chat_id: target.chatId,
+      text: chunks[c],
+      parse_mode: "HTML",
+      disable_web_page_preview: true
+    };
+
+    if (target.topicId && /^-?\d+$/.test(String(target.topicId).trim())) {
+      payload.message_thread_id = parseInt(String(target.topicId).trim(), 10);
+    }
+
+    var options = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    try {
+      // JANGAN PERNAH mencatat URL yang mengandung token ke log
+      var response = UrlFetchApp.fetch("https://api.telegram.org/bot" + config.token + "/sendMessage", options);
+      var resCode = response.getResponseCode();
+      var resText = response.getContentText();
+      var resJson = null;
+
+      try {
+        resJson = JSON.parse(resText);
+      } catch (parseErr) {}
+
+      if (resCode !== 200 || !resJson || !resJson.ok) {
+        allSuccess = false;
+        var desc = (resJson && resJson.description) ? resJson.description : ("HTTP " + resCode);
+        var logMsg = "[Telegram Error] Unit: " + (target.unit || "Unknown") + " | Status: " + resCode + " | Deskripsi: " + desc;
+
+        var lowerDesc = desc.toLowerCase();
+        if (lowerDesc.indexOf("message thread not found") !== -1 || lowerDesc.indexOf("thread not found") !== -1) {
+          logMsg += " -> Petunjuk: Topic ID salah, topik forum telah dihapus, atau grup bukan grup Forum.";
+        } else if (lowerDesc.indexOf("chat not found") !== -1 || lowerDesc.indexOf("bot was kicked") !== -1) {
+          logMsg += " -> Petunjuk: Bot belum dimasukkan ke grup/channel, bot dikeluarkan (kicked), atau Chat ID salah.";
+        } else if (lowerDesc.indexOf("not enough rights") !== -1 || lowerDesc.indexOf("need administrator rights") !== -1) {
+          logMsg += " -> Petunjuk: Bot tidak memiliki izin administrator untuk mengirim pesan di grup/channel ini.";
+        }
+
+        if (resJson && resJson.parameters && resJson.parameters.migrate_to_chat_id) {
+          var newChatId = resJson.parameters.migrate_to_chat_id;
+          logMsg += " -> Petunjuk: Grup telah di-upgrade menjadi supergroup! Harap perbarui Chat ID di Script Properties menjadi: " + newChatId;
+        }
+
+        console.warn(logMsg);
+      }
+    } catch (fetchErr) {
+      allSuccess = false;
+      // Sensor token jika secara tidak terduga muncul dalam pesan galat
+      var safeErrMsg = String(fetchErr.message || fetchErr).replace(new RegExp(config.token, "g"), "[REDACTED_BOT_TOKEN]");
+      console.error("[Telegram Error] Gagal melakukan request HTTP: " + safeErrMsg);
+    }
+  }
+
+  return allSuccess;
+}
+
+/**
+ * Format satu item kegiatan menjadi blok teks HTML Telegram
+ */
+function telegramFormatEventBlock_(ev, index) {
+  var jamRange = (ev.jam_mulai ? ev.jam_mulai : "-") + " - " + (ev.jam_selesai ? ev.jam_selesai : "-") + " WITA";
+  var isBersama = !ev.unit || String(ev.unit).trim().toLowerCase() === "bersama";
+
+  var block = (index + 1) + ". <b>" + escapeHtml(ev.judul) + "</b>\n";
+  if (isBersama) {
+    block += "   🤝 <i>Bersama (Ikhwan & Akhwat)</i>\n";
+  }
+  block += "   ⏰ " + escapeHtml(jamRange) + "\n";
+  block += "   🏢 " + escapeHtml(ev.lokasi || "-") + "\n";
+  if (ev.petugas) {
+    block += "   👤 " + escapeHtml(ev.petugas) + "\n";
+  }
+  block += "   🏷 " + escapeHtml(ev.divisi || "-") + "\n";
+  if (ev.deskripsi) {
+    block += "   📝 <i>" + escapeHtml(ev.deskripsi) + "</i>\n";
+  }
+  return block;
+}
+
+/**
+ * Mengirim digest harian ke satu target (Ikhwan atau Akhwat).
+ * Memecah pesan pada batas kegiatan jika panjang total melebihi 4096 karakter.
+ */
+function telegramSendDigestForUnit_(target, unitName, events, todayFormatted) {
+  var header = "📋 <b>AGENDA HARI INI - " + unitName.toUpperCase() + "</b>\n" +
+    "🗓 <i>" + todayFormatted + " (WITA)</i>\n" +
+    "Jumlah Agenda: " + events.length + " Kegiatan\n" +
+    "────────────────────\n\n";
+  var footer = "\n────────────────────\n🌐 <a href=\"" + escapeHtml(SITE_URL) + "\">Buka Kalender Proker OSIS</a>";
+
+  var eventBlocks = [];
+  for (var i = 0; i < events.length; i++) {
+    eventBlocks.push(telegramFormatEventBlock_(events[i], i));
+  }
+
+  var messages = [];
+  var currentContent = header;
+
+  for (var j = 0; j < eventBlocks.length; j++) {
+    var block = eventBlocks[j];
+    // Cek apakah menambahkan blok ini dan footer akan melebihi batas 4096 karakter
+    if ((currentContent + block + footer).length <= 4096) {
+      currentContent += block + "\n";
+    } else {
+      messages.push(currentContent.trim() + footer);
+      currentContent = "📋 <b>AGENDA HARI INI - " + unitName.toUpperCase() + " (Lanjutan)</b>\n" +
+        "────────────────────\n\n" + block + "\n";
+    }
+  }
+
+  if (currentContent.trim().length > 0) {
+    messages.push(currentContent.trim() + footer);
+  }
+
+  for (var m = 0; m < messages.length; m++) {
+    telegramSendMessage_(target, messages[m]);
+  }
+}
+
+/**
+ * Fungsi Pemicu Harian (Time-driven Trigger): sendTelegramDailyDigest
+ * Menjalankan ringkasan agenda kegiatan hari ini ke grup Telegram Ikhwan dan Akhwat secara TERPISAH.
+ * - Menggunakan aturan "aktif hari ini" yang sama dengan sendDailyReminderEmails.
+ * - Routing berdasarkan unit:
+ *   * Ikhwan  -> Hanya dikirim ke target Ikhwan
+ *   * Akhwat  -> Hanya dikirim ke target Akhwat
+ *   * Bersama -> Dikirim ke KEDUA target
+ * - Jika suatu unit tidak memiliki agenda hari ini, tidak ada pesan yang dikirimkan untuk unit tersebut (no empty digests).
+ */
+function sendTelegramDailyDigest() {
+  if (!TELEGRAM_NOTIFY_ENABLED) {
+    console.log("Notifikasi Telegram dinonaktifkan (TELEGRAM_NOTIFY_ENABLED = false).");
+    return;
+  }
+
+  try {
+    var config = telegramGetConfig_();
+    if (!config.token) {
+      console.warn("TELEGRAM_BOT_TOKEN belum disetel di Script Properties. Digest Telegram harian dibatalkan.");
+      return;
+    }
+
+    if (!config.targets.Ikhwan.chatId && !config.targets.Akhwat.chatId) {
+      console.warn("Chat ID Telegram Ikhwan maupun Akhwat belum disetel di Script Properties. Digest dibatalkan.");
+      return;
+    }
+
+    var todayStr = Utilities.formatDate(new Date(), "Asia/Makassar", "yyyy-MM-dd");
+    var parts = todayStr.split("-");
+    var yr = parseInt(parts[0], 10);
+    var mo = parseInt(parts[1], 10) - 1;
+    var dy = parseInt(parts[2], 10);
+    var dObj = new Date(Date.UTC(yr, mo, dy, 4, 0, 0));
+
+    var HARI_INDO = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    var BULAN_INDO = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    var todayFormatted = HARI_INDO[dObj.getUTCDay()] + ", " + dy + " " + BULAN_INDO[mo] + " " + yr;
+
+    // 1. Ambil data kegiatan dari sheet
+    var sheet = getOrCreateSheet();
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      console.log("Tidak ada data kegiatan di database. Digest Telegram dilewati.");
+      return;
+    }
+
+    var values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
+    var ikhwanEvents = [];
+    var akhwatEvents = [];
+
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      if (!row[0]) continue;
+      var evt = rowToObject(row);
+
+      var start = evt.tanggal_mulai;
+      var end = evt.tanggal_selesai || evt.tanggal_mulai;
+
+      // Filter: kegiatan yang aktif pada hari ini (WITA)
+      if (start && end && start <= todayStr && end >= todayStr) {
+        var unitClean = String(evt.unit || "Bersama").trim().toLowerCase();
+        if (unitClean === "ikhwan") {
+          ikhwanEvents.push(evt);
+        } else if (unitClean === "akhwat") {
+          akhwatEvents.push(evt);
+        } else {
+          // Bersama atau tidak diketahui -> masuk ke kedua target
+          ikhwanEvents.push(evt);
+          akhwatEvents.push(evt);
+        }
+      }
+    }
+
+    // Urutkan kegiatan berdasarkan jam mulai secara numerik
+    ikhwanEvents.sort(function (a, b) {
+      return parseTimeToMinutes_(a.jam_mulai) - parseTimeToMinutes_(b.jam_mulai);
+    });
+    akhwatEvents.sort(function (a, b) {
+      return parseTimeToMinutes_(a.jam_mulai) - parseTimeToMinutes_(b.jam_mulai);
+    });
+
+    // 2. Kirim digest untuk Ikhwan (jika ada kegiatan)
+    if (ikhwanEvents.length > 0) {
+      if (config.targets.Ikhwan.chatId) {
+        telegramSendDigestForUnit_(config.targets.Ikhwan, "Ikhwan", ikhwanEvents, todayFormatted);
+        console.log("Telegram digest Ikhwan berhasil dikirim (" + ikhwanEvents.length + " kegiatan).");
+      } else {
+        console.warn("TELEGRAM_CHAT_ID_IKHWAN belum disetel. Melewati digest Ikhwan.");
+      }
+    } else {
+      console.log("Tidak ada agenda kegiatan hari ini untuk Ikhwan. Digest Ikhwan tidak dikirim (no empty digest).");
+    }
+
+    // 3. Kirim digest untuk Akhwat (jika ada kegiatan)
+    if (akhwatEvents.length > 0) {
+      if (config.targets.Akhwat.chatId) {
+        telegramSendDigestForUnit_(config.targets.Akhwat, "Akhwat", akhwatEvents, todayFormatted);
+        console.log("Telegram digest Akhwat berhasil dikirim (" + akhwatEvents.length + " kegiatan).");
+      } else {
+        console.warn("TELEGRAM_CHAT_ID_AKHWAT belum disetel. Melewati digest Akhwat.");
+      }
+    } else {
+      console.log("Tidak ada agenda kegiatan hari ini untuk Akhwat. Digest Akhwat tidak dikirim (no empty digest).");
+    }
+
+  } catch (err) {
+    console.error("Kesalahan saat menjalankan sendTelegramDailyDigest:", err);
+  }
+}
+
+/**
+ * Fungsi Pemicu Berkala (Setiap 10 Menit): sendTelegramReminders
+ * Mengirimkan pengingat instan ~30 menit sebelum kegiatan dimulai.
+ * - Menggunakan LockService.tryLock(...) agar proses tidak pernah tumpang tindih.
+ * - Menghitung waktu mulai dalam WITA persis seperti archiveExpiredEvents.
+ * - Logika "di dalam rentang + deduplikasi" (0 < minutesUntilStart <= TELEGRAM_REMINDER_MINUTES_BEFORE).
+ * - Melewati kegiatan tanpa jam_mulai atau kegiatan yang sudah lewat.
+ * - Menyimpan riwayat pengingat di Script Properties dengan format kunci 'tgrem_<id>_<tgl>_<jam>'.
+ * - Membersihkan (pruning) kunci pengingat yang berumur lebih dari 2 hari di akhir run tanpa menyentuh properti lain.
+ */
+function sendTelegramReminders() {
+  if (!TELEGRAM_NOTIFY_ENABLED) {
+    console.log("Notifikasi Telegram dinonaktifkan (TELEGRAM_NOTIFY_ENABLED = false).");
+    return;
+  }
+
+  var lock = LockService.getScriptLock();
+  var hasLock = false;
+  try {
+    hasLock = lock.tryLock(10000);
+  } catch (lockErr) {
+    console.warn("Gagal mencoba lock untuk sendTelegramReminders:", lockErr);
+    return;
+  }
+  if (!hasLock) {
+    console.log("sendTelegramReminders sedang berjalan di proses lain. Melewati run ini.");
+    return;
+  }
+
+  try {
+    var config = telegramGetConfig_();
+    if (!config.token) {
+      console.warn("TELEGRAM_BOT_TOKEN belum disetel di Script Properties. Reminder Telegram dilewati.");
+      return;
+    }
+
+    var sheet = getOrCreateSheet();
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return;
+    }
+
+    var values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
+    var props = PropertiesService.getScriptProperties();
+    var allProps = props.getProperties();
+    var nowMs = new Date().getTime();
+
+    var sentRemindersCount = 0;
+
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      if (!row[0]) continue;
+      var evt = rowToObject(row);
+
+      var startDateStr = String(evt.tanggal_mulai || "").trim();
+      var startTimeStr = String(evt.jam_mulai || "").trim();
+
+      // Lewati kegiatan tanpa tanggal mulai yang valid atau tanpa jam mulai
+      if (!startDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(startDateStr) || !startTimeStr) {
+        continue;
+      }
+
+      var timeParts = startTimeStr.split(":");
+      if (timeParts.length < 2) continue;
+      var hour = parseInt(timeParts[0], 10);
+      var min = parseInt(timeParts[1], 10);
+      if (isNaN(hour) || isNaN(min)) continue;
+
+      var dateParts = startDateStr.split("-");
+      var yr = parseInt(dateParts[0], 10);
+      var mo = parseInt(dateParts[1], 10);
+      var dy = parseInt(dateParts[2], 10);
+
+      // Hitung timestamp mulai dalam zona waktu Asia/Makassar (WITA, UTC+8) seperti archiveExpiredEvents
+      var startDateTimeMs = Date.UTC(yr, mo - 1, dy, hour - 8, min, 0);
+
+      var diffMs = startDateTimeMs - nowMs;
+      var minutesUntilStart = Math.ceil(diffMs / (60 * 1000));
+
+      // Lewati kegiatan yang sudah dimulai (diffMs <= 0 atau minutesUntilStart <= 0)
+      if (minutesUntilStart <= 0) {
+        continue;
+      }
+
+      // Lewati kegiatan yang masih lebih dari jendela pengingat (30 menit)
+      if (minutesUntilStart > TELEGRAM_REMINDER_MINUTES_BEFORE) {
+        continue;
+      }
+
+      // Kunci deduplikasi berbasis ID kegiatan, tanggal mulai, dan jam mulai
+      // Format: tgrem_<eventId>_<startDate>_<startTime>
+      var dedupeKey = "tgrem_" + evt.id + "_" + startDateStr + "_" + startTimeStr.replace(/:/g, "");
+      if (allProps[dedupeKey]) {
+        // Pengingat untuk jadwal waktu mulai ini sudah pernah terkirim
+        continue;
+      }
+
+      // Tentukan target pengiriman sesuai unit
+      var targets = [];
+      var cleanUnit = String(evt.unit || "Bersama").trim().toLowerCase();
+      if (cleanUnit === "ikhwan") {
+        if (config.targets.Ikhwan.chatId) targets.push(config.targets.Ikhwan);
+      } else if (cleanUnit === "akhwat") {
+        if (config.targets.Akhwat.chatId) targets.push(config.targets.Akhwat);
+      } else {
+        // Bersama atau tidak diketahui -> kirim ke kedua target
+        if (config.targets.Ikhwan.chatId) targets.push(config.targets.Ikhwan);
+        if (config.targets.Akhwat.chatId) targets.push(config.targets.Akhwat);
+      }
+
+      if (targets.length === 0) {
+        continue;
+      }
+
+      var jamRange = (evt.jam_mulai || "-") + " - " + (evt.jam_selesai || "-") + " WITA";
+      var isBersama = cleanUnit === "bersama";
+
+      var reminderText = "⏰ <b>PENGINGAT KEGIATAN (Dimulai ± " + minutesUntilStart + " menit lagi)</b>\n\n" +
+        "📌 <b>" + escapeHtml(evt.judul) + "</b>\n";
+      if (isBersama) {
+        reminderText += "🤝 <i>Bersama (Ikhwan & Akhwat)</i>\n";
+      }
+      reminderText += "⏰ Waktu  : " + escapeHtml(jamRange) + "\n" +
+        "🏢 Lokasi : " + escapeHtml(evt.lokasi || "-") + "\n";
+      if (evt.petugas) {
+        reminderText += "👤 Petugas: " + escapeHtml(evt.petugas) + "\n";
+      }
+      reminderText += "🏷 Divisi : " + escapeHtml(evt.divisi || "-") + "\n";
+      if (evt.deskripsi) {
+        reminderText += "📝 Catatan: <i>" + escapeHtml(evt.deskripsi) + "</i>\n";
+      }
+      reminderText += "\n🌐 <a href=\"" + escapeHtml(SITE_URL) + "\">Buka Kalender Proker OSIS</a>";
+
+      for (var t = 0; t < targets.length; t++) {
+        telegramSendMessage_(targets[t], reminderText);
+      }
+
+      // Catat pengingat terkirim ke Script Properties
+      props.setProperty(dedupeKey, String(startDateTimeMs));
+      allProps[dedupeKey] = String(startDateTimeMs);
+      sentRemindersCount++;
+    }
+
+    if (sentRemindersCount > 0) {
+      console.log("sendTelegramReminders selesai: " + sentRemindersCount + " pengingat berhasil dikirim.");
+    }
+
+    // Pembersihan (Pruning) dedupe keys yang sudah lebih dari 2 hari
+    // KRUSIAL: Hanya hapus properti yang diawali "tgrem_" dan bernilai timestamp > 2 hari
+    var TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+    var currentProps = props.getProperties();
+    var keysToPrune = [];
+    for (var k in currentProps) {
+      if (currentProps.hasOwnProperty(k) && k.indexOf("tgrem_") === 0) {
+        var storedTs = parseInt(currentProps[k], 10);
+        if (!isNaN(storedTs) && (nowMs - storedTs > TWO_DAYS_MS)) {
+          keysToPrune.push(k);
+        }
+      }
+    }
+    for (var p = 0; p < keysToPrune.length; p++) {
+      props.deleteProperty(keysToPrune[p]);
+    }
+    if (keysToPrune.length > 0) {
+      console.log("Pruning berhasil: Menghapus " + keysToPrune.length + " kunci deduplikasi lama (> 2 hari).");
+    }
+
+  } catch (err) {
+    console.error("Kesalahan saat menjalankan sendTelegramReminders:", err);
+  } finally {
+    if (hasLock) {
+      try {
+        lock.releaseLock();
+      } catch (lockReleaseErr) {}
+    }
+  }
+}
+
+/**
+ * Fungsi Pengujian Manual: testTelegramConnection
+ * Mengirim pesan tes "Tes koneksi Jadwal Proker OSIS" ke setiap target yang terkonfigurasi.
+ * Mencatat di konsol log per unit apakah berhasil dan apakah topic ID digunakan.
+ */
+function testTelegramConnection() {
+  console.log("=== Memulai Pengujian Koneksi Telegram Bot Jadwal Proker OSIS ===");
+  var config = telegramGetConfig_();
+
+  if (!config.token) {
+    console.warn("[Gagal] TELEGRAM_BOT_TOKEN belum disetel di Script Properties.");
+    return;
+  }
+  console.log("[Info] TELEGRAM_BOT_TOKEN terdeteksi.");
+
+  var units = ["Ikhwan", "Akhwat"];
+  for (var i = 0; i < units.length; i++) {
+    var unit = units[i];
+    var target = config.targets[unit];
+
+    if (!target.chatId) {
+      console.warn("[Lewati] TELEGRAM_CHAT_ID_" + unit.toUpperCase() + " belum disetel di Script Properties.");
+      continue;
+    }
+
+    var topicUsed = Boolean(target.topicId && /^-?\d+$/.test(String(target.topicId).trim()));
+    var topicDesc = topicUsed
+      ? (" (Topic ID: " + target.topicId + ")")
+      : " (Tanpa Topic ID / Direct Group/Channel)";
+
+    var testHtml = "🔔 <b>Tes koneksi Jadwal Proker OSIS</b>\n\n" +
+      "Pesan uji coba integrasi Telegram untuk unit <b>" + unit + "</b>" + topicDesc + " berhasil terhubung!\n\n" +
+      "🌐 <a href=\"" + escapeHtml(SITE_URL) + "\">Kunjungi Website</a>";
+
+    var success = telegramSendMessage_(target, testHtml);
+    if (success) {
+      console.log("[Sukses] Unit " + unit + ": Pesan berhasil terkirim. Menggunakan Topic ID: " + (topicUsed ? target.topicId : "Tidak"));
+    } else {
+      console.warn("[Gagal] Unit " + unit + ": Gagal mengirim pesan. Menggunakan Topic ID: " + (topicUsed ? target.topicId : "Tidak"));
+    }
+  }
+  console.log("=== Pengujian Koneksi Telegram Selesai ===");
+}
+

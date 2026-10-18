@@ -18,14 +18,15 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
    - [Langkah 5: Jalankan Setup Database Awal (setupAll)](#langkah-5-jalankan-setup-database-awal-setupall)
    - [Langkah 6: Publikasikan Web App & Pembaruan Versi](#langkah-6-publikasikan-web-app--pembaruan-versi)
    - [Langkah 7: Konfigurasi Pemicu Otomatis (Triggers Setup)](#langkah-7-konfigurasi-pemicu-otomatis-triggers-setup)
-5. [🔗 Menghubungkan Backend ke Frontend](#-menghubungkan-backend-ke-frontend)
-6. [💻 Menjalankan di Komputer Lokal](#-menjalankan-di-komputer-lokal)
-7. [🌐 Panduan Deploy ke Vercel](#-panduan-deploy-ke-vercel)
-8. [📊 Struktur Model Data Spreadsheet](#-struktur-model-data-spreadsheet)
-   - [1. Tab 'Kegiatan' (Data Kegiatan Aktif - 12 Kolom)](#1-tab-kegiatan-data-kegiatan-aktif---12-kolom)
+5. [🤖 Panduan Notifikasi Telegram (Ikhwan & Akhwat Terpisah)](#-panduan-notifikasi-telegram-ikhwan--akhwat-terpisah)
+6. [🔗 Menghubungkan Backend ke Frontend](#-menghubungkan-backend-ke-frontend)
+7. [💻 Menjalankan di Komputer Lokal](#-menjalankan-di-komputer-lokal)
+8. [🌐 Panduan Deploy ke Vercel](#-panduan-deploy-ke-vercel)
+9. [📊 Struktur Model Data Spreadsheet](#-struktur-model-data-spreadsheet)
+   - [1. Tab 'Kegiatan' (Data Kegiatan Aktif - 13 Kolom)](#1-tab-kegiatan-data-kegiatan-aktif---13-kolom)
    - [2. Tab 'Subscribers' (Langganan Email - 4 Kolom)](#2-tab-subscribers-langganan-email---4-kolom)
-   - [3. Tab 'Arsip' (Riwayat & Evaluasi - 14 Kolom)](#3-tab-arsip-riwayat--evaluasi---14-kolom)
-9. [💡 Tips & Troubleshooting](#-tips--troubleshooting)
+   - [3. Tab 'Arsip' (Riwayat & Evaluasi - 15 Kolom)](#3-tab-arsip-riwayat--evaluasi---15-kolom)
+10. [💡 Tips & Troubleshooting](#-tips--troubleshooting)
 
 ---
 
@@ -98,6 +99,15 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
   - Modal khusus administrator untuk meninjau seluruh riwayat program kerja yang telah lampau.
   - Administrator dapat menilai **Status Pelaksanaan** (*Belum Dinilai*, *Terlaksana*, *Tidak Terlaksana*) serta menambahkan **Keterangan / Catatan Evaluasi Kendala**.
 
+- **🤖 Notifikasi & Pengingat Telegram Otomatis (Ikhwan & Akhwat Terpisah)**:
+  - Notifikasi langsung menjangkau ponsel pengurus dan anggota secara *real-time* meskipun peramban web sedang ditutup.
+  - **Pemisahan Satuan Ketat**: Agenda Ikhwan hanya dikirim ke target Ikhwan, agenda Akhwat hanya ke target Akhwat, dan agenda Bersama dikirimkan ke kedua target secara terpisah tanpa pernah digabungkan.
+  - **Dua Jadwal Pemicu Otomatis**:
+    1. *Daily Digest* setiap pagi (06:00-07:00 WITA) berisi daftar agenda hari ini yang diurutkan rapi berdasarkan waktu (*no empty digests*).
+    2. *Event Reminder* berkala (setiap 10 menit) yang mendeteksi kegiatan yang akan dimulai dalam rentang ±30 menit dengan deduplikasi cerdas.
+  - **Dukungan Beragam Grup**: Fleksibel untuk grup biasa, saluran (*channel*), maupun supergroup forum dengan *Topic ID*.
+  - **Entry Point Frontend**: Tombol navbar ikon pesawat kertas (`paper-plane`) dengan modal terpadu berisi tautan gabung grup yang dapat disesuaikan di `script.js`.
+
 - **🛡️ Bebas Masalah CORS & Mode Demo Lokal**:
   - Menggunakan payload `text/plain;charset=utf-8` untuk transmisi data ke Google Apps Script sehingga terhindar dari pemblokiran *CORS preflight (OPTIONS)*.
   - Jika `APPS_SCRIPT_URL` belum diisi, aplikasi otomatis berjalan dalam **Mode Demo Lokal** (*localStorage* & *mock data*) untuk keperluan demonstrasi dan pengujian UI.
@@ -108,7 +118,7 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
 
 ```text
 jadwal-proker-OSIS-IQIS/
-├── Code.gs          # Backend: Google Apps Script (CRUD, Otentikasi Password, Email Digest, Auto-Archive)
+├── Code.gs          # Backend: Google Apps Script (CRUD, Otentikasi Password, Email Digest, Notifikasi Telegram, Auto-Archive)
 ├── index.html       # Frontend: Struktur antarmuka web semantik dan modal dialog
 ├── style.css        # Styling: Sistem desain modern, tema Emerald Green, Dark/Light mode, responsif
 ├── script.js        # Frontend Logic: Kalender, manajemen state, otentikasi admin, modal & komunikasi API
@@ -225,7 +235,7 @@ Jika Anda mengedit `Code.gs` di kemudian hari, perbarui deployment yang sudah ad
    > ✅ **PENTING**: Melalui cara ini, URL Web App Anda **TIDAK AKAN BERUBAH**, sehingga Anda tidak perlu memperbarui `script.js` lagi di frontend.
 
 ### Langkah 7: Konfigurasi Pemicu Otomatis (Triggers Setup)
-Aplikasi membutuhkan **2 pemicu waktu (Time-driven Triggers)** agar fitur email harian dan auto-arsip berjalan otomatis di server Google:
+Aplikasi membutuhkan **4 pemicu waktu (Time-driven Triggers)** agar fitur email harian, auto-arsip, dan notifikasi Telegram berjalan otomatis di server Google:
 
 1. Di sidebar sebelah kiri editor Apps Script, klik ikon jam ⏰ **Triggers** (Pemicu).
 2. Tambahkan **Trigger 1: Notifikasi Email Harian**:
@@ -247,6 +257,96 @@ Aplikasi membutuhkan **2 pemicu waktu (Time-driven Triggers)** agar fitur email 
    - *Select hour interval*: `Every hour` (Setiap jam).
    - Klik **Save**.
    > ⚠️ *Jika trigger ini tidak dipasang*: Kegiatan yang sudah lewat 24 jam tidak akan pernah berpindah ke tab `Arsip`, dan modal riwayat evaluasi akan tetap kosong.
+
+4. Tambahkan **Trigger 3: Telegram Daily Digest**:
+   - Klik tombol **+ Add Trigger** lagi.
+   - *Choose which function to run*: `sendTelegramDailyDigest`
+   - *Choose which deployment*: `Head`
+   - *Select event source*: `Time-driven`
+   - *Select type of time based trigger*: `Day timer`
+   - *Select time of day*: Pilih jendela waktu pagi hari, misal `06:00 to 07:00`.
+   - Klik **Save**.
+   > ⚠️ *Jika trigger ini tidak dipasang*: Sistem tidak akan mengirimkan pesan ringkasan agenda pagi hari ke grup/saluran Telegram.
+
+5. Tambahkan **Trigger 4: Telegram Reminders (~30 Menit Sebelum Acara)**:
+   - Klik tombol **+ Add Trigger** lagi.
+   - *Choose which function to run*: `sendTelegramReminders`
+   - *Choose which deployment*: `Head`
+   - *Select event source*: `Time-driven`
+   - *Select type of time based trigger*: `Minutes timer`
+   - *Select minute interval*: `Every 10 minutes` (Setiap 10 menit).
+   - Klik **Save**.
+   > ⚠️ *Jika trigger ini tidak dipasang*: Pengingat otomatis menjelang kegiatan dimulai tidak akan terkirim ke Telegram.
+
+---
+
+## 🤖 Panduan Notifikasi Telegram (Ikhwan & Akhwat Terpisah)
+
+Fitur notifikasi Telegram memungkinkan pengurus dan anggota OSIS menerima ringkasan agenda pagi hari serta pengingat 30 menit sebelum kegiatan dimulai langsung di ponsel, bahkan ketika peramban web ditutup. Notifikasi ini dirancang dengan prinsip **pemisahan ketat antara Ikhwan dan Akhwat**.
+
+### 1. Prinsip Routing & Keamanan Satuan Unit
+- Kegiatan dengan unit **"Ikhwan"** hanya dikirim ke target Telegram Ikhwan.
+- Kegiatan dengan unit **"Akhwat"** hanya dikirim ke target Telegram Akhwat.
+- Kegiatan dengan unit **"Bersama"** (atau kosong) dikirim ke **KEDUA** target secara terpisah.
+- Pesan antara Ikhwan dan Akhwat tidak pernah digabung atau saling bocor.
+- Jika suatu unit tidak memiliki agenda hari ini, sistem tidak akan mengirim pesan kosong (*no empty digests*).
+
+> ⚠️ **Catatan Penting Mengenai Privasi Grup Forum (Topics)**:
+> Pada supergroup Telegram dengan fitur *Topics (Forum)* diaktifkan, seluruh anggota grup secara teknis tetap dapat membaca semua topik di dalam grup tersebut. Jika organisasi Anda menghendaki pemisahan akses yang **ketat dan mutlak** antara Ikhwan dan Akhwat, **gunakan dua Grup/Channel Telegram yang terpisah** daripada menggunakan dua topik dalam satu grup forum yang sama.
+
+### 2. Langkah Pembuatan Bot & Pengaturan Telegram
+1. **Buat Bot Baru via @BotFather**:
+   - Buka aplikasi Telegram, cari akun resmi **@BotFather**, lalu kirim perintah `/newbot`.
+   - Masukkan nama bot (misal: `Jadwal Proker OSIS IQIS`) dan username unik (misal: `OsisIqisReminderBot`).
+   - Salin **HTTP API Token** yang diberikan (format: `123456789:ABCdefGhIjk...`).
+   > ⛔ **PERINGATAN KEAMANAN**: Token bot ini bertindak sebagai kunci otentikasi penuh. **JANGAN PERNAH** menuliskan token langsung di dalam kode, jangan pernah commit token ke GitHub, dan jangan membagikannya ke publik.
+
+2. **Tambahkan Bot ke Grup / Channel**:
+   - Masukkan bot ke dalam grup/channel Ikhwan dan grup/channel Akhwat.
+   - Jadikan bot sebagai **Administrator** dengan hak akses minimal: *Send Messages* (atau *Post Messages* pada Channel).
+
+3. **Mendapatkan Chat ID & Topic ID (Opsional)**:
+   - Setiap unit memiliki target berupa pasangan `(chat_id, optional topic_id)`.
+   - Unit Ikhwan dan Akhwat dapat menggunakan tipe target yang berbeda (grup biasa, channel, atau forum group). Keduanya bahkan bisa menggunakan chat ID yang sama namun dengan topic ID berbeda jika menggunakan grup forum.
+   - **Cara Mudah Mendapatkan ID**:
+     1. Buka Telegram Desktop / Web.
+     2. Klik kanan pada pesan di dalam grup/topik tersebut > pilih **Copy Message Link**.
+     3. Tautan pesan akan berbentuk:
+        - Grup biasa: `https://t.me/c/1234567890/42`
+        - Grup Forum: `https://t.me/c/1234567890/2/42`
+     4. Nilai **Chat ID** adalah angka ID dengan awalan `-100` (contoh: ID `1234567890` menjadi `-1001234567890`).
+     5. Jika grup berupa Forum dengan topik, nilai **Topic ID** adalah angka di tengah (contoh: `2`). Jika grup biasa atau channel, Topic ID tidak diperlukan.
+   - **Cara Alternatif via API**: Buka `https://api.telegram.org/bot<TOKEN>/getUpdates` pada peramban setelah mengirimkan pesan di grup untuk melihat objek `chat.id` dan `message_thread_id`.
+
+### 3. Konfigurasi Script Properties di Apps Script
+Buka editor Google Apps Script > klik ikon roda gigi ⚙️ **Project Settings** > gulir ke **Script Properties** > tambahkan properti berikut:
+
+| Properti | Status | Deskripsi | Contoh Nilai |
+| :--- | :--- | :--- | :--- |
+| `TELEGRAM_BOT_TOKEN` | **Wajib** | Token bot dari @BotFather | `123456789:AAH...` |
+| `TELEGRAM_CHAT_ID_IKHWAN` | **Wajib** | Chat ID grup/channel Ikhwan | `-1001234567890` |
+| `TELEGRAM_CHAT_ID_AKHWAT` | **Wajib** | Chat ID grup/channel Akhwat | `-1009876543210` |
+| `TELEGRAM_TOPIC_ID_IKHWAN` | Opsional | Topic ID jika grup Ikhwan bertipe Forum | `2` |
+| `TELEGRAM_TOPIC_ID_AKHWAT` | Opsional | Topic ID jika grup Akhwat bertipe Forum | `5` |
+
+*Catatan: Jika token atau salah satu Chat ID unit belum disetel, backend akan mencatat peringatan yang jelas di log dan melewati unit tersebut tanpa pernah melempar exception atau memblokir unit lainnya.*
+
+### 4. Uji Koneksi Telegram (`testTelegramConnection`)
+1. Di toolbar editor Apps Script, pilih fungsi `testTelegramConnection`.
+2. Klik tombol **Run** (Jalankan).
+3. Google akan menampilkan dialog *Authorization Required* untuk meminta izin jaringan eksternal (`UrlFetchApp`). Klik *Review permissions* dan berikan izin akses.
+4. Periksa log eksekusi. Bot akan mengirimkan pesan uji coba *"🔔 Tes koneksi Jadwal Proker OSIS"* ke grup Ikhwan dan Akhwat serta mengonfirmasi di log apakah Topic ID digunakan atau tidak.
+
+### 5. Konfigurasi Tombol Gabung Frontend di `script.js` (Opsional)
+Di baris awal [`script.js`](./script.js), Anda dapat mengisi tautan undangan grup Telegram:
+```javascript
+const TELEGRAM_CHANNEL_LINKS = {
+  Ikhwan: "https://t.me/+AbCdEfGhIjK1",
+  Akhwat: "https://t.me/+XyZ123456789"
+};
+```
+- Jika kedua tautan dibiarkan kosong (`""`), tombol Telegram di bilah navigasi (navbar) otomatis disembunyikan sehingga tampilan tetap rapi.
+- Jika minimal salah satu tautan diisi, tombol Telegram (ikon pesawat kertas `paper-plane`) akan muncul di navbar dan membuka modal informasi pengingat serta tombol gabung grup untuk masing-masing unit.
 
 ---
 

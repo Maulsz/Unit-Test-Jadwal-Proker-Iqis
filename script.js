@@ -18,6 +18,17 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxsyA1b5H0fl6Z
 // Contoh: "https://script.google.com/macros/s/AKfycbxAbCdEfGhIjKlMnOpQrStUvWxYz/exec"
 
 /**
+ * Konfigurasi tautan grup/channel Telegram untuk tombol gabung di frontend (Ikhwan & Akhwat).
+ * Backend TIDAK menggunakan konfigurasi ini (hanya untuk tombol gabung di UI frontend).
+ * Jika kedua tautan dikosongkan (""), tombol Telegram di navbar otomatis disembunyikan.
+ */
+const TELEGRAM_CHANNEL_LINKS = {
+  Ikhwan: "",
+  Akhwat: ""
+};
+
+
+/**
  * Helper untuk sanitasi teks HTML guna mencegah XSS
  */
 function escapeHtml(str) {
@@ -2581,13 +2592,15 @@ const Modal = {
     const emailSubscribeModal = document.getElementById("emailSubscribeModal");
     const archiveModal = document.getElementById("archiveModal");
     const eventDetailModal = document.getElementById("eventDetailModal");
+    const telegramModal = document.getElementById("telegramModal");
     const isEventOpen = eventModal && !eventModal.classList.contains("hidden");
     const isDeleteOpen = deleteModal && !deleteModal.classList.contains("hidden");
     const isAdminLoginOpen = adminLoginModal && !adminLoginModal.classList.contains("hidden");
     const isEmailOpen = emailSubscribeModal && !emailSubscribeModal.classList.contains("hidden");
     const isArchiveOpen = archiveModal && !archiveModal.classList.contains("hidden");
     const isDetailOpen = eventDetailModal && !eventDetailModal.classList.contains("hidden");
-    if (!isEventOpen && !isDeleteOpen && !isAdminLoginOpen && !isEmailOpen && !isArchiveOpen && !isDetailOpen) {
+    const isTelegramOpen = telegramModal && !telegramModal.classList.contains("hidden");
+    if (!isEventOpen && !isDeleteOpen && !isAdminLoginOpen && !isEmailOpen && !isArchiveOpen && !isDetailOpen && !isTelegramOpen) {
       document.body.classList.remove("modal-open");
     }
   },
@@ -3609,6 +3622,9 @@ function initializeEvents() {
       if (typeof EmailSubscribeModal !== "undefined") {
         EmailSubscribeModal.close();
       }
+      if (typeof TelegramModal !== "undefined") {
+        TelegramModal.close();
+      }
       if (typeof ArchiveModal !== "undefined") {
         ArchiveModal.close();
       }
@@ -4095,6 +4111,84 @@ const EmailSubscribeModal = {
     }
   }
 };
+
+// ==========================================================================
+// CONTROLLER MODAL NOTIFIKASI TELEGRAM (IKHWAN & AKHWAT)
+// ==========================================================================
+const TelegramModal = {
+  modalEl: null,
+
+  init() {
+    this.modalEl = document.getElementById("telegramModal");
+    const openBtn = document.getElementById("telegramModalBtn");
+    const closeBtn = document.getElementById("closeTelegramModalBtn");
+    const bottomBtn = document.getElementById("closeTelegramBottomBtn");
+    const container = document.getElementById("telegramJoinButtonsContainer");
+
+    const ikhwanLink = (typeof TELEGRAM_CHANNEL_LINKS !== "undefined" && TELEGRAM_CHANNEL_LINKS.Ikhwan || "").trim();
+    const akhwatLink = (typeof TELEGRAM_CHANNEL_LINKS !== "undefined" && TELEGRAM_CHANNEL_LINKS.Akhwat || "").trim();
+
+    // Jika kedua tautan dikosongkan, sembunyikan tombol di navbar
+    if (!ikhwanLink && !akhwatLink) {
+      if (openBtn) openBtn.classList.add("hidden");
+      return;
+    }
+
+    // Jika minimal satu tautan tersedia, tampilkan tombol navbar
+    if (openBtn) {
+      openBtn.classList.remove("hidden");
+      openBtn.addEventListener("click", () => this.open());
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", () => this.close());
+    if (bottomBtn) bottomBtn.addEventListener("click", () => this.close());
+
+    if (this.modalEl) {
+      this.modalEl.addEventListener("click", (e) => {
+        if (e.target === this.modalEl) {
+          this.close();
+        }
+      });
+    }
+
+    // Render tautan gabung grup sesuai link yang ada
+    if (container) {
+      container.innerHTML = "";
+      if (ikhwanLink) {
+        const btnIkhwan = document.createElement("a");
+        btnIkhwan.href = ikhwanLink;
+        btnIkhwan.target = "_blank";
+        btnIkhwan.rel = "noopener noreferrer";
+        btnIkhwan.className = "btn-telegram-join btn-telegram-ikhwan";
+        btnIkhwan.innerHTML = `<i class="fa-brands fa-telegram"></i> <span>Gabung Grup Ikhwan</span>`;
+        container.appendChild(btnIkhwan);
+      }
+
+      if (akhwatLink) {
+        const btnAkhwat = document.createElement("a");
+        btnAkhwat.href = akhwatLink;
+        btnAkhwat.target = "_blank";
+        btnAkhwat.rel = "noopener noreferrer";
+        btnAkhwat.className = "btn-telegram-join btn-telegram-akhwat";
+        btnAkhwat.innerHTML = `<i class="fa-brands fa-telegram"></i> <span>Gabung Grup Akhwat</span>`;
+        container.appendChild(btnAkhwat);
+      }
+    }
+  },
+
+  open() {
+    if (!this.modalEl) return;
+    this.modalEl.classList.remove("hidden");
+    Modal.lockScroll();
+  },
+
+  close() {
+    if (!this.modalEl) return;
+    this.modalEl.classList.add("hidden");
+    Modal.unlockScroll();
+  }
+};
+
 
 // ==========================================================================
 // CONTROLLER MODAL RIWAYAT & ARSIP KEGIATAN (ADMIN COMPLETION REVIEW)
@@ -4750,13 +4844,15 @@ const AutoRefresh = {
     const emailSubscribeModal = document.getElementById("emailSubscribeModal");
     const archiveModal = document.getElementById("archiveModal");
     const eventDetailModal = document.getElementById("eventDetailModal");
+    const telegramModal = document.getElementById("telegramModal");
     const isEventModalOpen = eventModal && !eventModal.classList.contains("hidden");
     const isDeleteModalOpen = deleteModal && !deleteModal.classList.contains("hidden");
     const isAdminLoginOpen = adminLoginModal && !adminLoginModal.classList.contains("hidden");
     const isEmailModalOpen = emailSubscribeModal && !emailSubscribeModal.classList.contains("hidden");
     const isArchiveModalOpen = archiveModal && !archiveModal.classList.contains("hidden");
     const isDetailModalOpen = eventDetailModal && !eventDetailModal.classList.contains("hidden");
-    return isEventModalOpen || isDeleteModalOpen || isAdminLoginOpen || isEmailModalOpen || isArchiveModalOpen || isDetailModalOpen;
+    const isTelegramModalOpen = telegramModal && !telegramModal.classList.contains("hidden");
+    return isEventModalOpen || isDeleteModalOpen || isAdminLoginOpen || isEmailModalOpen || isArchiveModalOpen || isDetailModalOpen || isTelegramModalOpen;
   },
 
   /**
@@ -4795,6 +4891,7 @@ document.addEventListener("DOMContentLoaded", () => {
   EmailSubscribeModal.init();
   ArchiveModal.init();
   EventDetailModal.init();
+  TelegramModal.init();
   FormPickers.init();
 
   // Inisialisasi tanggal terpilih ke hari ini

@@ -2551,6 +2551,69 @@ select.form-control {
   flex-shrink: 0;
 }
 
+/* Telegram Notification Modal Elements */
+.telegram-modal-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(34, 158, 217, 0.15);
+  color: #0284c7;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .telegram-modal-icon {
+  background-color: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.btn-telegram-join {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-telegram-join i {
+  font-size: 1.125rem;
+}
+
+.btn-telegram-ikhwan {
+  background-color: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0284c7;
+}
+
+.btn-telegram-ikhwan:hover {
+  background-color: #0369a1;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.btn-telegram-akhwat {
+  background-color: #db2777;
+  color: #ffffff;
+  border: 1px solid #db2777;
+}
+
+.btn-telegram-akhwat:hover {
+  background-color: #be185d;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.35);
+}
+
 .option-text {
   display: flex;
   flex-direction: column;
