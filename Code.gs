@@ -2280,7 +2280,7 @@ function sendTelegramDailyDigest() {
  * - Menghitung waktu mulai dalam WITA persis seperti archiveExpiredEvents.
  * - Logika "di dalam rentang + deduplikasi" (0 < minutesUntilStart <= TELEGRAM_REMINDER_MINUTES_BEFORE).
  * - Melewati kegiatan tanpa jam_mulai atau kegiatan yang sudah lewat.
- * - Menyimpan riwayat pengingat di Script Properties dengan format kunci 'tgrem_<id>_<tgl>_<jam>'.
+ * - Menyimpan riwayat pengingat di Script Properties dengan format kunci 'tgrem_<id>_<tgl>_<jam>_<unit>'.
  * - Membersihkan (pruning) kunci pengingat yang berumur lebih dari 2 hari di akhir run tanpa menyentuh properti lain.
  */
 function sendTelegramReminders() {
@@ -2362,14 +2362,6 @@ function sendTelegramReminders() {
         continue;
       }
 
-      // Kunci deduplikasi berbasis ID kegiatan, tanggal mulai, dan jam mulai
-      // Format: tgrem_<eventId>_<startDate>_<startTime>
-      var dedupeKey = "tgrem_" + evt.id + "_" + startDateStr + "_" + startTimeStr.replace(/:/g, "");
-      if (allProps[dedupeKey]) {
-        // Pengingat untuk jadwal waktu mulai ini sudah pernah terkirim
-        continue;
-      }
-
       // Tentukan target pengiriman sesuai unit
       var targets = [];
       var cleanUnit = String(evt.unit || "Bersama").trim().toLowerCase();
@@ -2384,6 +2376,23 @@ function sendTelegramReminders() {
       }
 
       if (targets.length === 0) {
+        continue;
+      }
+
+      // Kunci deduplikasi berbasis ID kegiatan, tanggal mulai, jam mulai, dan unit target
+      // Format: tgrem_<eventId>_<startDate>_<startTime>_<unit>
+      var baseDedupeKey = "tgrem_" + evt.id + "_" + startDateStr + "_" + startTimeStr.replace(/:/g, "");
+
+      // Lewati jika semua target untuk kegiatan ini sudah pernah terkirim
+      var hasPendingTarget = false;
+      for (var t = 0; t < targets.length; t++) {
+        var checkKey = baseDedupeKey + "_" + (targets[t].unit || "Unknown");
+        if (!allProps[checkKey]) {
+          hasPendingTarget = true;
+          break;
+        }
+      }
+      if (!hasPendingTarget) {
         continue;
       }
 
@@ -2407,13 +2416,21 @@ function sendTelegramReminders() {
       reminderText += "\n🌐 <a href=\"" + escapeHtml(SITE_URL) + "\">Buka Kalender Proker OSIS</a>";
 
       for (var t = 0; t < targets.length; t++) {
-        telegramSendMessage_(targets[t], reminderText);
-      }
+        var target = targets[t];
+        var dedupeKey = baseDedupeKey + "_" + (target.unit || "Unknown");
+        if (allProps[dedupeKey]) {
+          // Pengingat untuk target ini sudah pernah terkirim
+          continue;
+        }
 
-      // Catat pengingat terkirim ke Script Properties
-      props.setProperty(dedupeKey, String(startDateTimeMs));
-      allProps[dedupeKey] = String(startDateTimeMs);
-      sentRemindersCount++;
+        var sendSuccess = telegramSendMessage_(target, reminderText);
+        if (sendSuccess) {
+          // Catat pengingat terkirim ke Script Properties HANYA jika telegramSendMessage_ mengembalikan true
+          props.setProperty(dedupeKey, String(startDateTimeMs));
+          allProps[dedupeKey] = String(startDateTimeMs);
+          sentRemindersCount++;
+        }
+      }
     }
 
     if (sentRemindersCount > 0) {
